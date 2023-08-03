@@ -26,7 +26,7 @@ def print_board(board: int):
     for i in range(1, BOARD_SIZE + 1):
         v = select(board, i)
         if v:
-            print(("-"*i + "#")*v, end="")
+            print(("#"*i + " ")*v, end="")
         
     print()
 
@@ -166,6 +166,9 @@ def print_state(state: State):
 
 memo = {}
 def dfs(state: State):
+    ones = select(state.board, 1)
+    state = State(state.turn, set(state.board, 1, ones % 2))
+    
     if state in memo:
         return memo[state]
     #ones = select(state.board, 1)
@@ -186,8 +189,7 @@ def dfs(state: State):
     
     any_losable = False
     for new_board in generate_boards(state.board):
-        ones = select(new_board, 1)
-        new_state = State(not state.turn, set(new_board, 1, ones % 2))
+        new_state = State(not state.turn, new_board)
         """ turn = not state.turn
         if ones % 2 == 1:
             turn = not turn
@@ -251,6 +253,15 @@ for i in range(2, 50):
     can_win = dfs(State(True, set(0, BOARD_SIZE, 1)))
     e = time.time()
     print(f"{BOARD_SIZE} Can always win from start? {can_win} {round(e - s, 2)}s")
+    print("ST ", BOARD_SIZE)
+    for board in generate_boards(set(0, BOARD_SIZE, 1)):
+        if dfs(State(False, board)):
+            print("   ", end="")
+            for i in range(1, BOARD_SIZE + 1):
+                v = select(board, i)
+                if v:
+                    print(" ".join([str(i)] * v), end=" ")
+            print()
 
  
 
