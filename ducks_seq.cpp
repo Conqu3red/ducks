@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <unordered_map>
 #include <chrono>
+#include "robin_hood.h"
 
 namespace Game {
     static uint64_t BOARD_SIZE;
@@ -64,17 +65,29 @@ struct State {
     }
 };
 
+// https://stackoverflow.com/questions/19195183/how-to-properly-hash-the-custom-struct
+template <class T>
+inline void hash_combine(std::size_t & s, const T & v)
+{
+  std::hash<T> h;
+  s^= h(v) + 0x9e3779b9 + (s<< 6) + (s>> 2);
+}
+
 struct hash_fn {
     size_t operator()(const State &state) const {
-        return (state.turn & 1)
-            ^ state.b.board[0] << 1
-            ^ state.b.board[1] << 1
-            ^ state.b.board[2] << 1
-            ^ state.b.board[3] << 1
-            ^ state.b.board[4] << 1
-            ^ state.b.board[5] << 1
-            ^ state.b.board[6] << 1
-            ^ state.b.board[7] << 1; // TODO: is this good enough?
+        std::size_t res = 0;
+        hash_combine(res, state.turn & 1);
+        hash_combine(res, state.b.board[0]);
+        hash_combine(res, state.b.board[1]);
+        hash_combine(res, state.b.board[2]);
+        hash_combine(res, state.b.board[3]);
+        hash_combine(res, state.b.board[4]);
+        hash_combine(res, state.b.board[5]);
+        hash_combine(res, state.b.board[6]);
+        hash_combine(res, state.b.board[7]);
+        hash_combine(res, state.b.board[8]);
+        hash_combine(res, state.b.board[9]); // TODO: is this good enough?
+        return res;
     }
 };
 
@@ -103,7 +116,7 @@ void print_board(uint8_t board[64]) {
 
 
 struct search {
-    std::unordered_map<State, bool, hash_fn> cache = {};
+    robin_hood::unordered_flat_map<State, bool, hash_fn> cache = robin_hood::unordered_flat_map<State, bool, hash_fn>(4000000ULL);
 
     bool MY_TURN = true;
 
@@ -152,50 +165,7 @@ struct search {
                 }
             }    
         }
-
-        /*
-        uint64_t temp_board = state.board;
-        uint32_t i = 0;
-        while (temp_board) {
-            if (temp_board & 1) {
-                uint64_t b = state.board ^ (1 << i);
-                while (b && !(b & 1)) b >>= 1;
-
-                State new_state = {!state.turn, b};
-                
-                bool guaranteed = guarantee_win(new_state);
-                if (state.turn == MY_TURN && guaranteed) {
-                    cache[state] = true;
-                    return true;
-                }
-                if (state.turn != MY_TURN && !guaranteed) {
-                    cache[state] = false;
-                    return false;
-                }
-                if (!guaranteed) any_losable = true;
-                // Case if adjacent is also set
-                if (temp_board & 0b10) {
-                    b = (state.board ^ (1 << i)) ^ (1 << (i + 1));
-                    while (b && !(b & 1)) b >>= 1;
-                    new_state = {!state.turn, b};
-                    bool guaranteed2 = guarantee_win(new_state);
-
-                    if (state.turn == MY_TURN && guaranteed2) {
-                        cache[state] = true;
-                        return true;
-                    }
-                    if (state.turn != MY_TURN && !guaranteed2) {
-                        cache[state] = false;
-                        return false;
-                    }
-                    if (!guaranteed2) any_losable = true;
-                }
-            }
-            temp_board >>= 1;
-            i++;
-        }
-        */
-
+        
         cache[state] = !any_losable;
         return !any_losable;
     }
