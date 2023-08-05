@@ -11,8 +11,8 @@ namespace Game {
 struct State {
     uint8_t turn;
     union {
-        uint64_t board[8];
-        uint8_t board8[64];
+        uint64_t board[10];
+        uint8_t board8[80];
     } b;
 
     bool operator==(const State &o) const {
@@ -24,7 +24,9 @@ struct State {
             b.board[4] == o.b.board[4] &&
             b.board[5] == o.b.board[5] &&
             b.board[6] == o.b.board[6] &&
-            b.board[7] == o.b.board[7]);
+            b.board[7] == o.b.board[7] &&
+            b.board[8] == o.b.board[8] &&
+            b.board[9] == o.b.board[9]);
     }
 
     bool zero() const {
@@ -36,7 +38,9 @@ struct State {
             b.board[4] |
             b.board[5] |
             b.board[6] |
-            b.board[7]
+            b.board[7] |
+            b.board[8] |
+            b.board[9]
         ) == 0;
     }
 
@@ -74,7 +78,9 @@ struct hash_fn {
             ^ state.b.board[4] << 1
             ^ state.b.board[5] << 1
             ^ state.b.board[6] << 1
-            ^ state.b.board[7] << 1; // TODO: is this good enough?
+            ^ state.b.board[7] << 1
+            ^ state.b.board[8] << 1
+            ^ state.b.board[9] << 1; // TODO: is this good enough?
     }
 };
 
@@ -205,9 +211,9 @@ struct search {
 
 int main() {
     Game::search s;
-    for (uint64_t w = 1; w <= 64; w++) {
+    for (uint64_t w = 1; w <= 80; w++) {
         Game::BOARD_SIZE = w;
-        Game::State state = {true, {0, 0, 0, 0, 0, 0, 0, 0}};
+        Game::State state = {true, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
         state.set(w, 1);
         //state.print();
         //break;
